@@ -72,13 +72,18 @@ class RecoverHistoricDataCommand extends ContainerAwareCommand
 
     }
 
-    public function recoverData($apiVersion, $bridge, \DateTime $startDate, \DateTime $endDate, $em, $acquisitionManager, $energyManager, $input, $output){
-        $output->writeln("\n\n\n+++++++++++++++++++++++++++ <info>{$bridge->getSerial()}</info> +++++++++++++++++++++++++++\n");
+    public function recoverData($apiVersion, $bridge, \DateTime $startDate, \DateTime $endDate, $em, $acquisitionManager, $energyManager, $input, $output)
+    {
+        $timezone = $input->getArgument('timezone');
+        $output->writeln("\n\n\n===================== <info>{$bridge->getSerial()}</info> =====================");
 
         $nextDate = clone $startDate;
 
         // splits the requests of the API Pachube into pieces of 6 hours of range
         while($nextDate < $endDate){
+
+            // Pachube only allows updates 5 times a minute (every 12 seconds)
+            sleep(15);
 
             $startRange = clone $nextDate;
             $nextDate->modify('+4 hours');
@@ -95,8 +100,22 @@ class RecoverHistoricDataCommand extends ContainerAwareCommand
 
             $data = json_decode($data, true);
 
+            if (isset($data['created'])) {
+                $created = new \DateTime($data['created'], new \DateTimeZone($timezone));
+                $created->setTimezone(new \DateTimeZone('UTC'));
+            }
+
+
+            if ($created > $nextDate) {
+                $output->writeln('>>>>>>>>>>>>>>> <info>Fast forward to first data date:</info> <comment>' . $data['created'] . '</comment>');
+                $nextDate = $created;
+            }
+
             if (isset($data['status'])){
-                $output->writeln("================================== <comment>{$data['status']}</comment> =======================================");
+                $output->writeln('============== <comment>' . $startRange->format('Y-m-d H:i:s') . ' </comment><<info>' . $data['status'] . '</info>><comment> ' . $nextDate->format('Y-m-d H:i:s') . '</comment> ==============');
+            }
+            else {
+                $output->writeln('============== <comment>' . $startRange->format('Y-m-d H:i:s') . ' </comment><<info>????</info>><comment> ' . $nextDate->format('Y-m-d H:i:s') . '</comment> ==============');
             }
 
             if (isset($data['errors'])){
@@ -122,7 +141,7 @@ class RecoverHistoricDataCommand extends ContainerAwareCommand
                 $intervalDate = $this->dateToInterval($pointDate);
 
                 if ($exist !== null){
-                    $output->writeln("<comment>Aquisition entry already exists:</comment> {$intervalDate->format('Y-m-d H:i:s')}");
+                    $output->writeln("============== <comment>Aquisition entry already exists:</comment> {$intervalDate->format('Y-m-d H:i:s')} ========");
                     continue;
                 }
 
