@@ -105,8 +105,7 @@ class RecoverHistoricDataCommand extends ContainerAwareCommand
                 $created->setTimezone(new \DateTimeZone('UTC'));
             }
 
-
-            if ($created > $nextDate) {
+            if (isset($created) AND $created > $nextDate) {
                 $output->writeln('>>>>>>>>>>>>>>> <info>Fast forward to first data date:</info> <comment>' . $data['created'] . '</comment>');
                 $nextDate = $created;
             }
