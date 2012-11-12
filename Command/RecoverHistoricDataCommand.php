@@ -118,6 +118,7 @@ class RecoverHistoricDataCommand extends ContainerAwareCommand
             }
 
             if (isset($data['errors'])){
+                $nextDate->modify('-4 hours');
                 $output->writeln("<error>{$data['errors']}</error>");
                 continue;
             }
