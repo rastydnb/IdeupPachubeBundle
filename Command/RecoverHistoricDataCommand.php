@@ -124,6 +124,7 @@ class RecoverHistoricDataCommand extends ContainerAwareCommand
             }
 
             if (!isset($data['datastreams'][1]['datapoints'])) {
+                $output->writeln('>>>>>>>>>>>>>> <info>Missing data for this date range</info>');
                 continue;
             }
             $points = $data['datastreams'][1]['datapoints'];
